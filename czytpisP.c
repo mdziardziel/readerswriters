@@ -6,13 +6,11 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 
-#define MAX 10
-
 static struct sembuf buf;
 
-void podnies(int semid, int semnum){
+void podnies(int semid, int semnum, int ile){
         buf.sem_num = semnum;
-        buf.sem_op = 1;
+        buf.sem_op = ile;
         buf.sem_flg = 0;
         if (semop(semid, &buf, 1) == -1) {
                 perror("Podnoszenie semafora");
@@ -20,9 +18,9 @@ void podnies(int semid, int semnum){
         }
 }
 
-void opusc(int semid, int semnum){
+void opusc(int semid, int semnum, int ile){
         buf.sem_num = semnum;
-        buf.sem_op = -1;
+        buf.sem_op = ile;
         buf.sem_flg = 0;
         if (semop(semid, &buf, 1) == -1) {
                 perror("Opuszczenie semafora");
@@ -31,60 +29,97 @@ void opusc(int semid, int semnum){
 }
 
 int main(){
-        printf("sdfsdf");
-        int shmid, semid, i;
-        int *buf;
+        int semid;
 
-        shmid = shmget(45281, (MAX+2)*sizeof(int), IPC_CREAT|0600);
-        if (shmid == -1) {
-                perror("Utworzenie segmentu pamieci wspoldzielonej");
-                exit(1);
-        }
+        int tugboats = 10;
+        int ports = 3;
+        int waiting = 0;
+        int in = 0;
 
-        buf = (int*)shmat(shmid, NULL, 0);
-        if (buf == NULL) {
-                perror("Przylaczenie segmentu pamieci wspoldzielonej");
-                exit(1);
-        }
 
-   #define indexZ buf[MAX]
-   #define indexO buf[MAX+1]
 
-        semid = semget(45281, 4, IPC_CREAT|IPC_EXCL|0600);
+
+        semid = semget(45281, 4, 0600);
         if (semid == -1) {
-                semid = semget(45281, 4, 0600);
-                if (semid == -1) {
-                        perror("Utworzenie tablicy semaforow");
-                        exit(1);
-                }
+                perror("Utworzenie tablicy semaforow");
+                exit(1);
         }
         else{
-                indexZ = 0;
-                indexO = 0;
-                if (semctl(semid, 0, SETVAL, (int)MAX) == -1) {
+                if (semctl(semid, 0, SETVAL,1)  == -1) {
                         perror("Nadanie wartosci semaforowi 0");
                         exit(1);
                 }
-                if (semctl(semid, 1, SETVAL, (int)0) == -1) {
+                if (semctl(semid, 1, SETVAL, tugboats) == -1) {
                         perror("Nadanie wartosci semaforowi 1");
                         exit(1);
                 }
-                if (semctl(semid, 2, SETVAL, (int)1) == -1) {
+                if (semctl(semid, 2, SETVAL, ports) == -1) {
                         perror("Nadanie wartosci semaforowi 2");
-                        exit(1);
-                }
-                if (semctl(semid, 3, SETVAL, (int)1) == -1) {
-                        perror("Nadanie wartosci semaforowi 3");
                         exit(1);
                 }
         }
 
-        for (i=0; i<10000; i++) {
-                opusc(semid, 1);
-                opusc(semid, 3);
-                printf("Numer: %5d   Wartosc: %5d\n", i, buf[indexO]);
-                indexO = (indexO+1)%MAX;
-                podnies(semid, 3);
-                podnies(semid, 0);
+
+
+
+        int pom;
+        for(int i = 1; i <= 10; i++) {
+                if(i<10) {
+                        if(fork()) {
+                                opusc(semid, 0,-1);
+                                pom = i;
+                                podnies(semid, 0,1);
+                                break;
+                        }
+                }else {
+                        opusc(semid, 0,-1);
+                        pom = i;
+                        podnies(semid, 0,1);
+                }
+
+        }
+
+        opusc(semid, 0,-1);
+        int weight = pom;
+        podnies(semid, 0,1);
+
+        while(1) {
+
+                // opusc(semid, 0,-1);
+                // waiting++;
+                // podnies(semid, 0,1);
+
+
+                opusc(semid, 1, weight*(-1));
+                opusc(semid, 2, -1);
+
+                // opusc(semid, 0,-1);
+                // waiting--;
+                // in++;
+                // podnies(semid, 0,1);
+
+                // opusc(semid, 0,-1);
+                ports = semctl(semid, 2, GETVAL, ports);
+                tugboats = semctl(semid, 1, GETVAL, ports);
+                if (ports == -1 || tugboats == -1) {
+                        perror("Pobieranie wartości semaforow");
+                        exit(1);
+                }
+                else{
+                        //printf("W PORCIE id %d ---WOLNE: porty %d, holowniki %d, czeka %d, w %d \n", weight,ports, tugboats, waiting, in);
+                        printf("W PORCIE id %d ---WOLNE: porty %d, holowniki %d\n", weight,ports, tugboats);
+                }
+                // podnies(semid, 0,1);
+
+                sleep(2);
+
+                // opusc(semid, 0,-1);
+                // in--;
+                // podnies(semid, 0,1);
+
+                podnies(semid, 2, 1);
+                podnies(semid, 1, weight);
+
+
         }
 }
