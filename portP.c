@@ -37,14 +37,15 @@ int main(){
         int in = 0;
 
 
-
-
-        semid = semget(45281, 4, 0600);
+        semid = semget(45281, 4, IPC_CREAT|IPC_EXCL|0600);
         if (semid == -1) {
-                perror("Utworzenie tablicy semaforow");
-                exit(1);
+                semid = semget(45281, 4, 0600);
+                if (semid == -1) {
+                        perror("Utworzenie tablicy semaforow");
+                        exit(1);
+                }
         }
-        else{
+        if(semid) {
                 if (semctl(semid, 0, SETVAL,1)  == -1) {
                         perror("Nadanie wartosci semaforowi 0");
                         exit(1);
@@ -62,26 +63,19 @@ int main(){
 
 
 
-        int pom;
+        int weight;
         for(int i = 1; i <= 10; i++) {
                 if(i<10) {
                         if(fork()) {
-                                opusc(semid, 0,-1);
-                                pom = i;
-                                podnies(semid, 0,1);
+                                weight = i;
                                 break;
                         }
                 }else {
-                        opusc(semid, 0,-1);
-                        pom = i;
-                        podnies(semid, 0,1);
+                        weight = i;
                 }
 
         }
 
-        opusc(semid, 0,-1);
-        int weight = pom;
-        podnies(semid, 0,1);
 
         while(1) {
 
