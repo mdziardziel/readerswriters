@@ -79,20 +79,9 @@ int main(){
 
         while(1) {
 
-                // opusc(semid, 0,-1);
-                // waiting++;
-                // podnies(semid, 0,1);
-
-
                 opusc(semid, 1, weight*(-1));
                 opusc(semid, 2, -1);
 
-                // opusc(semid, 0,-1);
-                // waiting--;
-                // in++;
-                // podnies(semid, 0,1);
-
-                // opusc(semid, 0,-1);
                 ports = semctl(semid, 2, GETVAL, ports);
                 tugboats = semctl(semid, 1, GETVAL, ports);
                 if (ports == -1 || tugboats == -1) {
@@ -100,16 +89,10 @@ int main(){
                         exit(1);
                 }
                 else{
-                        //printf("W PORCIE id %d ---WOLNE: porty %d, holowniki %d, czeka %d, w %d \n", weight,ports, tugboats, waiting, in);
                         printf("W PORCIE id %d ---WOLNE: porty %d, holowniki %d\n", weight,ports, tugboats);
                 }
-                // podnies(semid, 0,1);
 
                 sleep(2);
-
-                // opusc(semid, 0,-1);
-                // in--;
-                // podnies(semid, 0,1);
 
                 podnies(semid, 2, 1);
                 podnies(semid, 1, weight);

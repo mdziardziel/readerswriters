@@ -51,7 +51,7 @@ void* ship(void *p) {
                 pthread_cond_signal(&cond1);
                 pthread_mutex_unlock(&mutex1);
 
-                printf("W PORCIE --- WOLNE: holowniki %d porty %d czeka %d --- id procesu: %lu \n",tugboats, ports, waiting, pthread_self());
+                printf("W PORCIE --- WOLNE: holowniki %d porty %d czeka %d --- id : %lu \n",tugboats, ports, waiting, pthread_self());
                 sleep(weight/2);
 
                 pthread_mutex_lock(&mutex1);

@@ -59,8 +59,9 @@ void* writer(void *p) {
                 writers_wait--;
                 pthread_mutex_unlock(&mutex2);
                 writers++;
-                for(int i = 0; i <print; i++) ;
-                printf("PISZE  --- w sekcji: %d czytelników, %d pisarzy --- oczekuje: %d czytelników, %d pisarzy --- id procesu: %lu \n", readers, writers, readers_wait, writers_wait, pthread_self());
+                //for(int i = 0; i <print; i++) ;
+                printf("PISZE  --- w sekcji: %d czytelników, %d pisarzy --- oczekuje: %d czytelników, %d pisarzy --- id : %lu \n", readers, writers, readers_wait, writers_wait, pthread_self());
+                sleep(1);
                 token = 0;
                 writers--;
                 pthread_cond_signal(&cond_readers);
@@ -88,9 +89,9 @@ void* reader(void *p) {
                 readers++;
                 pthread_mutex_unlock(&mutex);
 
-                for(int i = 0; i <print; i++) ;
-                printf("CZYTAM --- w sekcji: %d czytelników, %d pisarzy --- oczekuje: %d czytelników, %d pisarzy --- id procesu: %lu \n", readers, writers, readers_wait, writers_wait, pthread_self());
-
+                //for(int i = 0; i <print; i++) ;
+                printf("CZYTAM --- w sekcji: %d czytelników, %d pisarzy --- oczekuje: %d czytelników, %d pisarzy --- id : %lu \n", readers, writers, readers_wait, writers_wait, pthread_self());
+                sleep(1);
                 pthread_mutex_lock(&mutex);
                 token = 1;
                 readers--;
