@@ -104,55 +104,60 @@ int main(){
 
         while(1) {
                 if(id%2) { //czytelnicy
-                        opusc(semid, 2);
-                        buf[3]++;
+                        opusc(semid, 2); //semafor2 - wzajemne wykluczanie buf[3] i buf[4]
+                        buf[3]++; //dodaje czekajacego czytelnika
                         podnies(semid, 2);
 
-                        opusc(semid, 0);
+                        opusc(semid, 0); //semafor0 - wzjemne wykluczanie buf[0], buf[1], buf[2]
                         opusc(semid, 2);
-                        if(buf[1]==0 || buf[4]>0) {
+                        if(buf[1]==0 || buf[4]>0) { // jesli brak czytelników w sekcji krytycznej lub pisrz czeka
                                 podnies(semid,2);
                                 podnies(semid, 0);
-                                opusc(semid, 1);
+                                opusc(semid, 1); //nie wpuszczam do sekcji krytycznej ani pisarzy ani czytelnikow
+                                /*
+                                   -jesli nie czeka zaden pisarz to kolejni czytelnicy beda mogli wchodzic bez przeszkod
+                                   -jesli bedzie pisarz w kolejce to czytelnicy beda blokowani
+                                   nastepnie gdy wszyscy czytelnicy wyjdą z sekcji to odblokuje się semafor1
+                                   nastepnie wejdzie ktoś kto czeka na semaforze1 - albo czytelnik albo pisarz, wiec nie faworyzuje nikogo
+                                 */
                                 opusc(semid, 0);
                         }
                         else podnies(semid,2);
                         opusc(semid, 2);
-                        buf[3]--;
+                        buf[3]--; // odejmuje czekajacego czytelnika
                         podnies(semid,2);
-                        buf[1]++;
+                        buf[1]++; // dodaje czytelnika w sekcji
                         podnies(semid, 0);
 
+                        //czytelnika w sekcji krytycznej
                         opusc(semid, 2);
                         printf("CZYTAM --- w sekcji: %d czytelników, %d pisarzy --- oczekuje: %d czytelników, %d pisarzy --- id : %d \n", buf[1], buf[2], buf[3], buf[4], id);
                         podnies(semid, 2);
                         //sleep(1);
 
                         opusc(semid, 0);
-                        buf[0]=0;
-                        buf[1]--;
-                        if(buf[1]==0) podnies(semid, 1);
+                        buf[1]--; // zmniejszam czytelnikow w sekcji
+                        if(buf[1]==0) podnies(semid, 1);  // jesli brak czytelnikow w sekcji to moge wpuscic pisarza
                         podnies(semid, 0);
 
 
                 }else{ //pisarze
 
                         opusc(semid, 2);
-                        buf[4]++;
+                        buf[4]++; //dodaje czekajacego pisarza
                         podnies(semid, 2);
 
-                        opusc(semid, 1);
+                        opusc(semid, 1); // wykluczam pisarza i czytelnika w sekcji krytycznej oraz 2 pisarzy
                         opusc(semid, 0);
                         opusc(semid, 2);
-                        buf[4]--;
+                        buf[4]--; // odejmuje czekajacego pisarza
                         podnies(semid, 2);
-                        buf[2]++;
+                        buf[2]++; // dodaje pisarza w sekcji
                         opusc(semid, 2);
                         printf("PISZE  --- w sekcji: %d czytelników, %d pisarzy --- oczekuje: %d czytelników, %d pisarzy --- id : %d \n", buf[1], buf[2], buf[3], buf[4], id);
                         podnies(semid, 2);
                         //sleep(1);
-                        buf[2]--;
-                        buf[0]=1;
+                        buf[2]--; // odejmuje pisarza w sekcji
                         podnies(semid, 0);
                         podnies(semid, 1);
 

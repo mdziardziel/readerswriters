@@ -63,7 +63,7 @@ int main(){
 
 
 
-        int weight;
+        int weight; //waga statku, jednoczesnie to ile potrzebuje holownikow
         for(int i = 1; i <= 10; i++) {
                 if(i<10) {
                         if(fork()) {
@@ -79,10 +79,11 @@ int main(){
 
         while(1) {
 
-                opusc(semid, 1, weight*(-1));
-                opusc(semid, 2, -1);
+                opusc(semid, 2, -1); //najpierw rezerwuje port, zeby statki ciezsze tez mialy szanse wejsc
+                opusc(semid, 1, weight*(-1)); //jesli bedzie wystarczajaco holownikow to przechodze do sekcji
 
-                ports = semctl(semid, 2, GETVAL, ports);
+
+                ports = semctl(semid, 2, GETVAL, ports); // pobieram ilosc wolnych poertow i holownikow
                 tugboats = semctl(semid, 1, GETVAL, ports);
                 if (ports == -1 || tugboats == -1) {
                         perror("Pobieranie wartości semaforow");
@@ -94,8 +95,9 @@ int main(){
 
                 sleep(2);
 
-                podnies(semid, 2, 1);
-                podnies(semid, 1, weight);
+                podnies(semid, 1, weight); //zwalniam holowniki
+                podnies(semid, 2, 1); //zwalniam port
+
 
 
         }

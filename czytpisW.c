@@ -14,57 +14,44 @@ pthread_mutex_t mutex_writer = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_writers = PTHREAD_COND_INITIALIZER;
 pthread_cond_t cond_readers = PTHREAD_COND_INITIALIZER;
 
-int szansa = 0;
-int readers = 0;
-int writers = 0;
-int writers_wait = 0;
-int readers_wait = 0;
-int token = 0;
+int readers = 0; //czytelnikow  sekcji
+int writers = 0; //pisarzy w sekcji
+int writers_wait = 0; //czekajacych pisarzy
+int readers_wait = 0; // czekajacych czytelnikow
+int token = 0; //kto teraz priorytetowo wejdzie - czytelnik czy pisarz
 
-int print = 9999999;
-int petla = 100;
-int npis = 0;
-int nczyt = 0;
+
 int spij = 1;
-
-
-/*
-   MUTEX2 CHRONI ZMIENNE WRITERS_WAIT ORAZ READERS_WAIT
-
-
-
-
- */
 
 
 void* writer(void *p) {
         while(1) {
-                pthread_mutex_lock(&mutex2);
-                writers_wait++;
+                pthread_mutex_lock(&mutex2); // mutex2 - wykluczanie writers_wait i readers_wait
+                writers_wait++; //dodaje czekajacego pisarza
                 pthread_mutex_unlock(&mutex2);
 
-                pthread_mutex_lock(&mutex);
+                pthread_mutex_lock(&mutex); //mutex - wykluczanie readers, writers
                 pthread_mutex_lock(&mutex2);
-                if(readers > 0) {
+                if(readers > 0) { //jesli jest jakis czytelnik w sekcji
                         pthread_mutex_unlock(&mutex2);
-                        pthread_cond_wait(&cond_writers, &mutex);
-                }else if(readers_wait > 0 && token == 0) {
+                        pthread_cond_wait(&cond_writers, &mutex); //to czekaj
+                }else if(readers_wait > 0 && token == 0) { //jesli brak czytelnika w sekcji i jakis czytelnik czeka i czytelnicy maja priorytet
                         pthread_mutex_unlock(&mutex2);
-                        pthread_cond_wait(&cond_writers, &mutex);
+                        pthread_cond_wait(&cond_writers, &mutex); // to czekaj
 
                 }else{
                         pthread_mutex_unlock(&mutex2);
                 }
                 pthread_mutex_lock(&mutex2);
-                writers_wait--;
+                writers_wait--; // odejmuje czekajacego pisarza
                 pthread_mutex_unlock(&mutex2);
-                writers++;
-                //for(int i = 0; i <print; i++) ;
+                writers++; //dodaje pisarza w sekcji
+
                 printf("PISZE  --- w sekcji: %d czytelników, %d pisarzy --- oczekuje: %d czytelników, %d pisarzy --- id : %lu \n", readers, writers, readers_wait, writers_wait, pthread_self());
                 sleep(1);
-                token = 0;
-                writers--;
-                pthread_cond_signal(&cond_readers);
+                token = 0; // zmieniam priorytet na czytelnika
+                writers--; // odejmuje pisarza w sekcji
+                pthread_cond_signal(&cond_readers); //daje sygnal czytelnikowi, ze pisarz wyszedl
                 pthread_mutex_unlock(&mutex);
         }
 }
@@ -72,31 +59,31 @@ void* writer(void *p) {
 void* reader(void *p) {
         while(1) {
                 pthread_mutex_lock(&mutex2);
-                readers_wait++;
+                readers_wait++; //dodaje czytelnika do sekcji
                 pthread_mutex_unlock(&mutex2);
 
                 pthread_mutex_lock(&mutex);
                 pthread_mutex_lock(&mutex2);
-                if(writers_wait > 0 && token == 1) {
+                if(writers_wait > 0 && token == 1) { //jesli pisarz czeka i ma priorytet
                         pthread_mutex_unlock(&mutex2);
-                        pthread_cond_wait(&cond_readers, &mutex);
-                }  else{
+                        pthread_cond_wait(&cond_readers, &mutex); // to czekaj
+                }  else{ //jesli pisarz nie czeka lub nie ma priorytetu to przechodzi dalej
                         pthread_mutex_unlock(&mutex2);
                 }
                 pthread_mutex_lock(&mutex2);
-                readers_wait--;
+                readers_wait--; // odejmuje czekajacego czytelnika
                 pthread_mutex_unlock(&mutex2);
-                readers++;
+                readers++; // dodaje czytelnika w sekcji
                 pthread_mutex_unlock(&mutex);
 
-                //for(int i = 0; i <print; i++) ;
+
                 printf("CZYTAM --- w sekcji: %d czytelników, %d pisarzy --- oczekuje: %d czytelników, %d pisarzy --- id : %lu \n", readers, writers, readers_wait, writers_wait, pthread_self());
                 sleep(1);
                 pthread_mutex_lock(&mutex);
-                token = 1;
-                readers--;
-                if(readers==0) {
-                        pthread_cond_signal(&cond_writers);
+                token = 1; //zmieniam priorytet na pisarza
+                readers--; //odejmuje czytelnika w sekcji
+                if(readers==0) { //jesli brak czytelnikow w sekcji
+                        pthread_cond_signal(&cond_writers); //to daje sygnal czytelnikowi, ze moze wejsc
                 }
                 pthread_mutex_unlock(&mutex);
         }
